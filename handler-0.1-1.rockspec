@@ -25,10 +25,10 @@ build = {
    type = "builtin",
    modules = {
      handler = "src/handler.lua",
-     iterator = "contrib/iterator.lua",
-     stm = "contrib/stm.lua",
-     exception = "contrib/exception.lua",
-     nlr = "contrib/nlr.lua",
+     ["handler.iterator"] = "contrib/iterator.lua",
+     ["handler.stm"] = "contrib/stm.lua",
+     ["handler.exception"] = "contrib/exception.lua",
+     ["handler.nlr"] = "contrib/nlr.lua",
    },
    copy_directories = {}
 }

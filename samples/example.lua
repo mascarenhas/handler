@@ -1,7 +1,7 @@
 
-local iterator = require "iterator"
-local nlr = require "nlr"
-local ex = require "exception"
+local iterator = require "handler.iterator"
+local nlr = require "handler.nlr"
+local ex = require "handler.exception"
 
 local function aux(msg)
   return nlr.run(function ()

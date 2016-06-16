@@ -1,9 +1,9 @@
 
 local thread = require "thread"
-local iterator = require "iterator"
+local iterator = require "handler.iterator"
 local cosmo = require "cosmo"
-local nlr = require "nlr"
-local ex = require "exception"
+local nlr = require "handler.nlr"
+local ex = require "handler.exception"
 
 local template = cosmo.compile("$message[[$msg]]")
 

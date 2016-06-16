@@ -26,7 +26,7 @@ build = {
    modules = {
      handler = "src/handler.lua",
      iterator = "contrib/iterator.lua",
-     --stm = "contrib/stm.lua",
+     stm = "contrib/stm.lua",
      exception = "contrib/exception.lua",
      nlr = "contrib/nlr.lua",
    },

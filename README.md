@@ -4,7 +4,7 @@ Informally, an *effect handler* is a way for a coroutine to
 answer to *operations*. An operation is identified with a label,
 and can have arguments. Every operation is dispatched to
 the nearest enclosing coroutine that has a handler for
-that operation. 
+that operation.
 
 A handler receives a *continuation*, and the arguments
 for its operation. The continuation can be used to
@@ -21,4 +21,8 @@ Install it by running `luarocks make` on the provided
 rockspec file. The `contrib` folder has some libraries
 that implement some abstractions on top of effect handlers,
 and the `samples` folder has a sample script that shows
-how different handlers compose seamlessly.
+how different handlers compose seamlessly. Some of them depend on
+the [thread](https://github.com/mascarenhas/thread)
+library and on a branch of
+ [Cosmo](https://github.com/mascarenhas/cosmo/tree/taggedcoro).
+These two libraries depend on [taggedcoro](https://github.com/mascarenhas/taggedcoro).

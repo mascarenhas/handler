@@ -9,6 +9,9 @@ local function handlek(co, ...)
   local label = res[1]
   local hf = handlers[co][label]
   if not hf then
+    if not coroutine.isyieldable() then
+      return error("there is no handler for the operation " .. label)
+    end
     return handlek(co, coroutine.yield(table.unpack(res)))
   elseif label == "return" then
     return hf(table.unpack(res, 2))
@@ -24,6 +27,9 @@ function handler.with(handler, f, ...)
 end
 
 function handler.op(label, ...)
+  if not coroutine.isyieldable() then
+    return error("there is no handler for the operation " .. label)
+  end
   return coroutine.yield(label, ...)
 end
 

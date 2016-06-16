@@ -24,10 +24,14 @@ local not_found = {}
 local function handlek(co, label, ...)
   local hf = handlers[co][label]
   if not hf then
-    if not isyieldable() then
-      return handlek(co, co(not_found))
+    if label == "return" then
+      return ...
+    else
+      if not isyieldable() then
+        return handlek(co, co(not_found))
+      end
+      return handlek(co, co(yield(label, ...)))
     end
-    return handlek(co, co(yield(label, ...)))
   elseif label == "return" then
     return hf(...)
   else

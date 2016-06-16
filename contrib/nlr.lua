@@ -4,10 +4,6 @@ local nlr = {}
 
 local h = {}
 
-h["return"] = function (...)
-  return ...
-end
-
 function h.nlr_return(k, ...)
   return ...
 end

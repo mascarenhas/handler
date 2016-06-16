@@ -11,7 +11,7 @@ local function aux(msg)
       nlr.ret(msg)
       return "unreacheable"
     end,
-    function (err, retry)
+    function (err, traceback, retry)
       retry(err)
       return "unreacheable"
     end)

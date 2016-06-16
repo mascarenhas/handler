@@ -6,9 +6,6 @@ local ex = {}
 
 function ex.trycatch(tblk, cblk)
   local h = {}
-  h["return"] = function (...)
-    return ...
-  end
   function h.exception_throw(k, co, e)
     local traceback = function (msg)
       return ex.traceback(co, msg)

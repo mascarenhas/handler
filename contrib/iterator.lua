@@ -14,9 +14,6 @@ function iterator.make(f)
     savedk = k
     return ...
   end
-  h["return"] = function (...)
-    return ...
-  end
   return function (...)
     if not savedk then
       return handler.with(h, f, ...)

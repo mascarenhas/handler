@@ -19,7 +19,7 @@ function iterator.make(f)
   end
   return function (...)
     if not savedk then
-      return handler.with(iterator.handler, f, ...)
+      return handler.with(h, f, ...)
     else
       return savedk(...)
     end

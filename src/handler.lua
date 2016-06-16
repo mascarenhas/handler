@@ -4,33 +4,38 @@ local handler = {}
 
 local handlers = setmetatable({}, { __mode = "k" })
 
-local function handlek(co, ...)
-  local res = { co(...) }
-  local label = res[1]
+local not_found = {}
+
+local function handlek(co, label, ...)
   local hf = handlers[co][label]
   if not hf then
     if not coroutine.isyieldable() then
-      return error("there is no handler for the operation " .. label)
+      return handlek(co, co(not_found))
     end
-    return handlek(co, coroutine.yield(table.unpack(res)))
+    return handlek(co, co(coroutine.yield(label, ...)))
   elseif label == "return" then
-    return hf(table.unpack(res, 2))
+    return hf(...)
   else
-    return hf(function (...) return handlek(co, ...) end, table.unpack(res, 2))
+    return hf(function (...) return handlek(co, co(...)) end, ...)
   end
 end
 
 function handler.with(handler, f, ...)
   local co = coroutine.wrap(function (...) return "return", f(...) end)
   handlers[co] = handler
-  return handlek(co, ...)
+  return handlek(co, co(...))
+end
+
+local function opk(label, fst, ...)
+  if fst == not_found then
+    return error("there is no hander for operation " .. label)
+  else
+    return fst, ...
+  end
 end
 
 function handler.op(label, ...)
-  if not coroutine.isyieldable() then
-    return error("there is no handler for the operation " .. label)
-  end
-  return coroutine.yield(label, ...)
+  return opk(label, coroutine.yield(label, ...))
 end
 
 return handler

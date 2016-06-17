@@ -1,18 +1,9 @@
 
-local yield, wrap, isyieldable = coroutine.yield, coroutine.wrap, coroutine.isyieldable
+local coroutine = coroutine
 
 local ok, taggedcoro = pcall(require, "taggedcoro")
-
 if ok then
-  yield = function (...)
-    return taggedcoro.yield("handler", ...)
-  end
-  wrap = function (f)
-    return taggedcoro.wrap(f, "handler")
-  end
-  isyieldable = function ()
-    return taggedcoro.isyieldable("handler")
-  end
+  coroutine = taggedcoro.fortag("handler")
 end
 
 local handler = {}
@@ -40,7 +31,7 @@ function handlek(co, ok, label, ...)
     if label == "return" then
       return ...
     else
-      return handlekk(co, yield(label, ...))
+      return handlekk(co, coroutine.yield(label, ...))
     end
   elseif label == "return" then
     return hf(...)
@@ -61,7 +52,7 @@ function handlek(co, ok, label, ...)
 end
 
 function handler.with(handler, f, ...)
-  local co = wrap(function (...) return "return", f(...) end)
+  local co = coroutine.wrap(function (...) return "return", f(...) end)
   handlers[co] = handler
   for k, _ in pairs(handler) do
     opset[k] = (opset[k] or 0) + 1
@@ -81,7 +72,7 @@ end
 
 function handler.op(label, ...)
   if (opset[label] or 0) > 0 then
-    return yield(label, ...)
+    return coroutine.yield(label, ...)
   else
     return error("there is no hander for operation " .. label)
   end

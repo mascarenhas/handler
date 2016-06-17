@@ -1,87 +1,36 @@
 
-local yield, wrap, isyieldable = coroutine.yield, coroutine.wrap, coroutine.isyieldable
-
-local ok, taggedcoro = pcall(require, "taggedcoro")
-
-if ok then
-  yield = function (...)
-    return taggedcoro.yield("handler", ...)
-  end
-  wrap = function (f)
-    return taggedcoro.wrap(f, "handler")
-  end
-  isyieldable = function ()
-    return taggedcoro.isyieldable("handler")
-  end
-end
+local taggedcoro = require("taggedcoro")
 
 local handler = {}
 
-local handlers = setmetatable({}, { __mode = "k" })
-
-local opset = setmetatable({}, { __mode = "k" })
-
-local handlek
-
-local function handlekk(co, ...)
-  for k, _ in pairs(handlers[co]) do
-    opset[k] = opset[k] + 1
-  end
-  return handlek(co, co(...))
-end
-
-function handlek(co, ok, label, ...)
-  if not ok then return error(label) end
-  for k, _ in pairs(handlers[co]) do
-    opset[k] = opset[k] - 1
-  end
-  local hf = handlers[co][label]
-  if not hf then
-    if label == "return" then
-      return ...
-    else
-      return handlekk(co, yield(label, ...))
-    end
-  elseif label == "return" then
+local function handlek(co, wco, ...)
+  local label = taggedcoro.lasttag(co)
+  local hf = taggedcoro.tagset(co)[label]
+  assert(hf)
+  if label == "return" then
     return hf(...)
   else
-    local function unwind(e)
-      for k, _ in pairs(handlers[co]) do
-        opset[k] = opset[k] - 1
-      end
-      return e
-    end
     return hf(function (...)
-      for k, _ in pairs(handlers[co]) do
-        opset[k] = opset[k] + 1
-      end
-      return handlek(co, xpcall(co, unwind, ...))
+      return handlek(co, wco, wco(...))
     end, ...)
   end
 end
 
 function handler.with(handler, f, ...)
-  local co = wrap(function (...) return "return", f(...) end)
-  handlers[co] = handler
-  for k, _ in pairs(handler) do
-    opset[k] = (opset[k] or 0) + 1
+  if not handler["return"] then
+    handler["return"] = function (...) return ... end
   end
-  local function unwind(e)
-    for k, _ in pairs(handler) do
-      opset[k] = opset[k] - 1
-    end
-    return e
-  end
-  return handlek(co, xpcall(co, unwind, ...))
+  local wco, co = taggedcoro.wrap(f, handler)
+  return handlek(co, wco, wco(...))
 end
 
 function handler.present(label)
-  return (opset[label] or 0) > 0
+  return taggedcoro.isyieldable(label)
 end
 
 function handler.op(label, ...)
-  if (opset[label] or 0) > 0 then
-    return yield(label, ...)
+  if handler.present(label) then
+    return taggedcoro.yield(label, ...)
   else
     return error("there is no hander for operation " .. label)
   end

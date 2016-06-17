@@ -38,7 +38,6 @@ end)
 
 local t2 = thread.new(function ()
   stm.transaction(function ()
-    print(stm.in_transaction())
     print("t2:", balance())
     deposit(350)
     print("t2:",balance())

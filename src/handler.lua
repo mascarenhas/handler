@@ -30,7 +30,8 @@ local function handlekk(co, ...)
   return handlek(co, co(...))
 end
 
-function handlek(co, label, ...)
+function handlek(co, ok, label, ...)
+  if not ok then return error(label) end
   for k, _ in pairs(handlers[co]) do
     opset[k] = opset[k] - 1
   end
@@ -44,11 +45,17 @@ function handlek(co, label, ...)
   elseif label == "return" then
     return hf(...)
   else
+    local function unwind(e)
+      for k, _ in pairs(handlers[co]) do
+        opset[k] = opset[k] - 1
+      end
+      return e
+    end
     return hf(function (...)
       for k, _ in pairs(handlers[co]) do
         opset[k] = opset[k] + 1
       end
-      return handlek(co, co(...))
+      return handlek(co, xpcall(co, unwind, ...))
     end, ...)
   end
 end
@@ -59,7 +66,13 @@ function handler.with(handler, f, ...)
   for k, _ in pairs(handler) do
     opset[k] = (opset[k] or 0) + 1
   end
-  return handlek(co, co(...))
+  local function unwind(e)
+    for k, _ in pairs(handler) do
+      opset[k] = opset[k] - 1
+    end
+    return e
+  end
+  return handlek(co, xpcall(co, unwind, ...))
 end
 
 function handler.present(label)

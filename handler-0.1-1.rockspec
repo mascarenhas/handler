@@ -29,6 +29,7 @@ build = {
      ["handler.stm"] = "contrib/stm.lua",
      ["handler.exception"] = "contrib/exception.lua",
      ["handler.nlr"] = "contrib/nlr.lua",
+     ["handler.coroutine"] = "contrib/coroutine.lua"
    },
    copy_directories = {}
 }

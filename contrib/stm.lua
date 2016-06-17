@@ -49,9 +49,6 @@ function stm.transaction(blk)
   function h.stm_rollback(k)
     return
   end
-  function h.stm_in_transaction(k)
-    return k(true)
-  end
   h["return"] = function (...)
     for name, var in pairs(tvars) do
       if db[name].timestamp > var.timestamp then
@@ -91,7 +88,7 @@ function stm.rollback()
 end
 
 function stm.in_transaction()
-  return (pcall(handler.op, "stm_in_transaction"))
+  return handler.present("stm_get")
 end
 
 return stm

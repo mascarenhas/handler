@@ -18,52 +18,44 @@ local function handlekk(co, ...)
   for k, _ in pairs(handlers[co]) do
     opset[k] = opset[k] + 1
   end
-  return handlek(co, co(...))
+  return handlek(co, coroutine.resume(co, ...))
 end
 
-function handlek(co, ok, label, ...)
-  if not ok then return error(label) end
-  for k, _ in pairs(handlers[co]) do
+function handlek(co, ok, ...)
+  local h = handlers[co]
+  for k, _ in pairs(h) do
     opset[k] = opset[k] - 1
   end
-  local hf = handlers[co][label]
+  if not ok then
+    return error((...))
+  end
+  if coroutine.status(co) == "dead" then
+    return h["return"](...)
+  end
+  local label = ...
+  local hf = h[label]
   if not hf then
-    if label == "return" then
-      return ...
-    else
-      return handlekk(co, coroutine.yield(label, ...))
-    end
-  elseif label == "return" then
-    return hf(...)
+    return handlekk(co, coroutine.yield(...))
   else
-    local function unwind(e)
-      for k, _ in pairs(handlers[co]) do
-        opset[k] = opset[k] - 1
-      end
-      return e
-    end
     return hf(function (...)
-      for k, _ in pairs(handlers[co]) do
+      for k, _ in pairs(h) do
         opset[k] = opset[k] + 1
       end
-      return handlek(co, xpcall(co, unwind, ...))
-    end, ...)
+      return handlek(co, coroutine.resume(co, ...))
+    end, select(2, ...))
   end
 end
 
-function handler.with(handler, f, ...)
-  local co = coroutine.wrap(function (...) return "return", f(...) end)
-  handlers[co] = handler
-  for k, _ in pairs(handler) do
+function handler.with(h, f, ...)
+  local co = coroutine.create(f)
+  if not h["return"] then
+    h["return"] = function (...) return ... end
+  end
+  handlers[co] = h
+  for k, _ in pairs(h) do
     opset[k] = (opset[k] or 0) + 1
   end
-  local function unwind(e)
-    for k, _ in pairs(handler) do
-      opset[k] = opset[k] - 1
-    end
-    return e
-  end
-  return handlek(co, xpcall(co, unwind, ...))
+  return handlek(co, coroutine.resume(co, ...))
 end
 
 function handler.present(label)

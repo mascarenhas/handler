@@ -7,10 +7,7 @@ local NOT_FOUND = {}
 
 local handlers = setmetatable({}, { __mode = "k" })
 
-local function handlek(tag, co, ok, ...)
-  if not ok then
-    return error((...))
-  end
+local function handlek(tag, co, ...)
   local h = handlers[co]
   if coroutine.status(co) == "dead" then
     return h:finish(...)
@@ -20,24 +17,24 @@ local function handlek(tag, co, ok, ...)
   if not hf then
     if coroutine.isyieldable(tag) then
       -- try to find op in next handler of this type
-      return handlek(tag, co, coroutine.resume(co, coroutine.yield(tag, label, ...)))
+      return handlek(tag, co, co(coroutine.yield(tag, label, ...)))
     else
-      return handlek(tag, co, coroutine.resume(co, NOT_FOUND))
+      return handlek(tag, co, co(NOT_FOUND))
     end
   else
     return hf(h, function (...)
-      return handlek(tag, co, coroutine.resume(co, ...))
+      return handlek(tag, co, co(...))
     end, select(2, ...))
   end
 end
 
 function handler.with(tag, h, f, ...)
-  local co = coroutine.create(tag, f)
+  local co = coroutine.wrap(tag, f)
   if not h.finish then
     h.finish = function (self, ...) return ... end
   end
   handlers[co] = h
-  return handlek(tag, co, coroutine.resume(co, ...))
+  return handlek(tag, co, co(...))
 end
 
 function handler.present(tag)

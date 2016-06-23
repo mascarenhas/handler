@@ -13,7 +13,7 @@ local function handlek(tag, co, ok, ...)
   end
   local h = handlers[co]
   if coroutine.status(co) == "dead" then
-    return h["return"](...)
+    return h:finish(...)
   end
   local label = ...
   local hf = h[label]
@@ -25,7 +25,7 @@ local function handlek(tag, co, ok, ...)
       return handlek(tag, co, coroutine.resume(co, NOT_FOUND))
     end
   else
-    return hf(function (...)
+    return hf(h, function (...)
       return handlek(tag, co, coroutine.resume(co, ...))
     end, select(2, ...))
   end
@@ -33,8 +33,8 @@ end
 
 function handler.with(tag, h, f, ...)
   local co = coroutine.create(tag, f)
-  if not h["return"] then
-    h["return"] = function (...) return ... end
+  if not h.finish then
+    h.finish = function (self, ...) return ... end
   end
   handlers[co] = h
   return handlek(tag, co, coroutine.resume(co, ...))

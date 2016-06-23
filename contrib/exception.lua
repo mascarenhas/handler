@@ -3,17 +3,6 @@ local coroutine = require "taggedcoro"
 
 local ex = {}
 
-function ex.trycatch(tblk, cblk)
-  local h = {}
-  function h.throw(k, co, e)
-    local traceback = function (msg)
-      return ex.traceback(co, msg)
-    end
-    return cblk(e, traceback, k)
-  end
-  return handler.with("exception", h, tblk)
-end
-
 function ex.throw(e)
   return handler.op("exception", "throw", coroutine.running(), e)
 end
@@ -29,6 +18,20 @@ function ex.traceback(co, msg)
     end
   end
   return table.concat(tb, "\n")
+end
+
+local ops = {}
+
+function ops:throw(k, co, e)
+  local traceback = function (msg)
+    return ex.traceback(co, msg)
+  end
+  return self.cblk(e, traceback, k)
+end
+
+function ex.trycatch(tblk, cblk)
+  local h = setmetatable({ cblk = cblk }, { __index = ops })
+  return handler.with("exception", h, tblk)
 end
 
 return ex

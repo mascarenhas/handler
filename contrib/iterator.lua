@@ -7,19 +7,25 @@ function iterator.produce(...)
   return handler.op("iterator", "produce", ...)
 end
 
-function iterator.make(f)
-  local savedk
-  local h = {}
-  function h.produce(k, ...)
-    savedk = k
-    return ...
+local ops = {}
+
+function ops:produce(k, ...)
+  self.savedk = k
+  return ...
+end
+
+function ops:next(...)
+  if self.savedk then
+    return self.savedk(...)
+  else
+    return handler.with("iterator", self, self.f, ...)
   end
+end
+
+function iterator.make(f)
+  local h = setmetatable({ f = f }, { __index = ops })
   return function (...)
-    if not savedk then
-      return handler.with("iterator", h, f, ...)
-    else
-      return savedk(...)
-    end
+    return h:next(...)
   end
 end
 

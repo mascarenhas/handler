@@ -4,23 +4,26 @@ local coro = {}
 
 local main = { status = "normal" }
 
+local ops = {}
+
+function ops:yield(k, ...)
+  self.status = "suspended"
+  self.k = k
+  return ...
+end
+
+function ops:running(k)
+  return k(self)
+end
+
+function ops:finish(...)
+  self.status = "dead"
+  return ...
+end
+
 function coro.create(f)
-  local co = { status = "suspended", f = f, k = nil }
-  co.h = {
-    yield = function (k, ...)
-      co.status = "suspended"
-      co.k = k
-      return ...
-    end,
-    running = function (k)
-      return k(co)
-    end,
-    ["return"] = function (...)
-      co.status = "dead"
-      return ...
-    end
-  }
-  return co
+  return setmetatable({ status = "suspended", f = f, k = nil },
+                      { __index = ops })
 end
 
 local function resumek(co, ok, err, ...)
@@ -41,7 +44,7 @@ function coro.resume(co, ...)
   if co.k then
     return resumek(co, pcall(co.k, ...))
   else
-    return resumek(co, pcall(handler.with, "coroutine", co.h, co.f, ...))
+    return resumek(co, pcall(handler.with, "coroutine", co, co.f, ...))
   end
 end
 

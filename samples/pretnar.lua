@@ -3,14 +3,14 @@ local handler = require "handler"
 local lua_print = print
 
 local print = {
-  print = function (k, s)
-    print(s)
+  print = function (self, k, s)
+    lua_print(s)
     k()
   end
 }
 
 local reverse = {
-  print = function (k, s)
+  print = function (self, k, s)
     k()
     handler.op("io", "print", s)
   end
@@ -27,10 +27,10 @@ handler.with("io", print, function ()
 end)
 
 local collect = {
-  ["return"] = function (x)
+  finish = function (self, x)
     return x, ""
   end,
-  print = function (k, s)
+  print = function (self, k, s)
     local x, acc = k()
     return x, s .. acc
   end
@@ -43,12 +43,12 @@ lua_print(handler.with("io", collect, function ()
 end))
 
 local collectp = {
-  ["return"] = function (x)
+  finish = function (self, x)
     return function (acc)
       return x, acc
     end
   end,
-  print = function (k, s)
+  print = function (self, k, s)
     return function (acc)
       return k()(acc .. s)
     end
@@ -58,17 +58,17 @@ local collectp = {
 lua_print(handler.with("io", collectp, ABC)(""))
 
 local state = {
-  ["return"] = function (x)
+  finish = function (self, x)
     return function (s)
       return s, x
     end
   end,
-  get = function (k)
+  get = function (self, k)
     return function (s)
       return k(s)(s)
     end
   end,
-  set = function (k, s)
+  set = function (self, k, s)
     return function ()
       return k()(s)
     end
@@ -84,23 +84,23 @@ end
 lua_print(handler.with("st", state, getset)(2))
 
 local transaction = {
-  ["return"] = function (x)
+  finish = function (self, x)
     return function (s)
       handler.op("st", "set", s)
       return x
     end
   end,
-  rollback = function (k, x)
+  rollback = function (self, k, x)
     return function ()
       return x
     end
   end,
-  get = function (k)
+  get = function (self, k)
     return function (s)
       return k(s)(s)
     end
   end,
-  set = function (k, s)
+  set = function (self, k, s)
     return function ()
       return k()(s)
     end

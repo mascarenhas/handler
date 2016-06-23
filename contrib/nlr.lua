@@ -4,16 +4,16 @@ local nlr = {}
 
 local h = {}
 
-function h.nlr_return(k, ...)
+function h.ret(k, ...)
   return ...
 end
 
 function nlr.run(blk)
-  return handler.with(h, blk)
+  return handler.with("nlr", h, blk)
 end
 
 function nlr.ret(...)
-  return handler.op("nlr_return", ...)
+  return handler.op("nlr", "ret", ...)
 end
 
 return nlr

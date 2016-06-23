@@ -12,18 +12,18 @@ local print = {
 local reverse = {
   print = function (k, s)
     k()
-    handler.op("print", s)
+    handler.op("io", "print", s)
   end
 }
 
 local function ABC()
-  handler.op("print", "A")
-  handler.op("print", "B")
-  handler.op("print", "C")
+  handler.op("io", "print", "A")
+  handler.op("io", "print", "B")
+  handler.op("io", "print", "C")
 end
 
-handler.with(print, function ()
-  handler.with(reverse, ABC)
+handler.with("io", print, function ()
+  handler.with("io", reverse, ABC)
 end)
 
 local collect = {
@@ -36,10 +36,10 @@ local collect = {
   end
 }
 
-lua_print(handler.with(collect, ABC))
+lua_print(handler.with("io", collect, ABC))
 
-lua_print(handler.with(collect, function ()
-  handler.with(reverse, ABC)
+lua_print(handler.with("io", collect, function ()
+  handler.with("io", reverse, ABC)
 end))
 
 local collectp = {
@@ -55,7 +55,7 @@ local collectp = {
   end
 }
 
-lua_print(handler.with(collectp, ABC)(""))
+lua_print(handler.with("io", collectp, ABC)(""))
 
 local state = {
   ["return"] = function (x)
@@ -76,17 +76,17 @@ local state = {
 }
 
 local getset = function ()
-  local x = handler.op("get")
-  handler.op("set", x * 2)
+  local x = handler.op("st", "get")
+  handler.op("st", "set", x * 2)
   return 0
 end
 
-lua_print(handler.with(state, getset)(2))
+lua_print(handler.with("st", state, getset)(2))
 
 local transaction = {
   ["return"] = function (x)
     return function (s)
-      handler.op("set", s)
+      handler.op("st", "set", s)
       return x
     end
   end,
@@ -108,19 +108,19 @@ local transaction = {
 }
 
 local trans = function ()
-  local x = handler.op("get")
-  handler.op("set", x * 2)
+  local x = handler.op("st", "get")
+  handler.op("st", "set", x * 2)
   if x < 5 then
-    handler.op("rollback", 0)
+    handler.op("st", "rollback", 0)
   end
   return 1
 end
 
-lua_print(handler.with(state, function ()
-  local s = handler.op("get")
-  return handler.with(transaction, trans)(s)
+lua_print(handler.with("st", state, function ()
+  local s = handler.op("st", "get")
+  return handler.with("st", transaction, trans)(s)
 end)(2))
-lua_print(handler.with(state, function ()
-  local s = handler.op("get")
-  return handler.with(transaction, trans)(s)
+lua_print(handler.with("st", state, function ()
+  local s = handler.op("st", "get")
+  return handler.with("st", transaction, trans)(s)
 end)(6))

@@ -18,13 +18,13 @@ function stm.transaction(blk)
   end
   local tvars = {}
   local h = {}
-  function h.stm_get(k, name)
+  function h.get(k, name)
     if not tvars[name] then
       tvars[name] = { value = db[name].value, timestamp = db[name].timestamp, dirty = false }
     end
     return k(tvars[name].value)
   end
-  function h.stm_set(k, name, val)
+  function h.set(k, name, val)
     if not tvars[name] then
       tvars[name] = { value = val, timestamp = db[name].timestamp, dirty = true }
     else
@@ -33,7 +33,7 @@ function stm.transaction(blk)
     end
     return k()
   end
-  function h.stm_retry(k)
+  function h.retry(k)
     for name, var in pairs(tvars) do
       if db[name].timestamp > var.timestamp then
         return stm.transaction(blk)
@@ -46,7 +46,7 @@ function stm.transaction(blk)
     thread.yield("cvs", cvs)
     return stm.transaction(blk)
   end
-  function h.stm_rollback(k)
+  function h.rollback(k)
     return
   end
   h["return"] = function (...)
@@ -68,27 +68,27 @@ function stm.transaction(blk)
     end
     return ...
   end
-  return handler.with(h, blk)
+  return handler.with("stm", h, blk)
 end
 
 function stm.get(name)
-  return handler.op("stm_get", name)
+  return handler.op("stm", "get", name)
 end
 
 function stm.set(name, val)
-  return handler.op("stm_set", name, val)
+  return handler.op("stm", "set", name, val)
 end
 
 function stm.retry()
-  return handler.op("stm_retry")
+  return handler.op("stm", "retry")
 end
 
 function stm.rollback()
-  return handler.op("stm_rollback")
+  return handler.op("stm", "rollback")
 end
 
 function stm.in_transaction()
-  return handler.present("stm_get")
+  return handler.present("stm")
 end
 
 return stm

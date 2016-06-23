@@ -467,4 +467,3 @@ end)
 local a = {co()}
 assert(a[10] == "hi")
 print'OK'
-           

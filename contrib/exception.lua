@@ -1,22 +1,21 @@
 local handler = require "handler"
-local ok, coroutine = pcall(require, "taggedcoro")
-if not ok then coroutine = require "coroutine" end
+local coroutine = require "taggedcoro"
 
 local ex = {}
 
 function ex.trycatch(tblk, cblk)
   local h = {}
-  function h.exception_throw(k, co, e)
+  function h.throw(k, co, e)
     local traceback = function (msg)
       return ex.traceback(co, msg)
     end
     return cblk(e, traceback, k)
   end
-  return handler.with(h, tblk)
+  return handler.with("exception", h, tblk)
 end
 
 function ex.throw(e)
-  return handler.op("exception_throw", coroutine.running(), e)
+  return handler.op("exception", "throw", coroutine.running(), e)
 end
 
 function ex.traceback(co, msg)

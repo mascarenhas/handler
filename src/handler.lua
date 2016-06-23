@@ -1,73 +1,60 @@
 
-local coroutine = coroutine
-
-local ok, taggedcoro = pcall(require, "taggedcoro")
-if ok then
-  coroutine = taggedcoro.fortag("handler")
-end
+local coroutine = require "taggedcoro"
 
 local handler = {}
 
+local NOT_FOUND = {}
+
 local handlers = setmetatable({}, { __mode = "k" })
 
-local opset = setmetatable({}, { __mode = "k" })
-
-local handlek
-
-local function handlekk(co, ...)
-  for k, _ in pairs(handlers[co]) do
-    opset[k] = opset[k] + 1
-  end
-  return handlek(co, coroutine.resume(co, ...))
-end
-
-function handlek(co, ok, ...)
-  local h = handlers[co]
-  for k, _ in pairs(h) do
-    opset[k] = opset[k] - 1
-  end
+local function handlek(tag, co, ok, ...)
   if not ok then
     return error((...))
   end
+  local h = handlers[co]
   if coroutine.status(co) == "dead" then
     return h["return"](...)
   end
   local label = ...
   local hf = h[label]
   if not hf then
-    return handlekk(co, coroutine.yield(...))
+    if coroutine.isyieldable(tag) then
+      -- try to find op in next handler of this type
+      return handlek(tag, co, coroutine.resume(co, coroutine.yield(tag, label, ...)))
+    else
+      return handlek(tag, co, coroutine.resume(co, NOT_FOUND))
+    end
   else
     return hf(function (...)
-      for k, _ in pairs(h) do
-        opset[k] = opset[k] + 1
-      end
-      return handlek(co, coroutine.resume(co, ...))
+      return handlek(tag, co, coroutine.resume(co, ...))
     end, select(2, ...))
   end
 end
 
-function handler.with(h, f, ...)
-  local co = coroutine.create(f)
+function handler.with(tag, h, f, ...)
+  local co = coroutine.create(tag, f)
   if not h["return"] then
     h["return"] = function (...) return ... end
   end
   handlers[co] = h
-  for k, _ in pairs(h) do
-    opset[k] = (opset[k] or 0) + 1
-  end
-  return handlek(co, coroutine.resume(co, ...))
+  return handlek(tag, co, coroutine.resume(co, ...))
 end
 
-function handler.present(label)
-  return (opset[label] or 0) > 0
+function handler.present(tag)
+  return coroutine.isyieldable(tag)
 end
 
-function handler.op(label, ...)
-  if (opset[label] or 0) > 0 then
-    return coroutine.yield(label, ...)
+local function opk(tag, label, ...)
+  local fst = ...
+  if fst == NOT_FOUND then
+    error("handler not found for tag " .. tag .. "  and label " .. label)
   else
-    return error("there is no hander for operation " .. label)
+    return ...
   end
+end
+
+function handler.op(tag, label, ...)
+  return opk(tag, label, coroutine.yield(tag, label, ...))
 end
 
 return handler

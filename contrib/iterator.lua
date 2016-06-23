@@ -4,19 +4,19 @@ local handler = require "handler"
 local iterator = {}
 
 function iterator.produce(...)
-  return handler.op("iterator_produce", ...)
+  return handler.op("iterator", "produce", ...)
 end
 
 function iterator.make(f)
   local savedk
   local h = {}
-  function h.iterator_produce(k, ...)
+  function h.produce(k, ...)
     savedk = k
     return ...
   end
   return function (...)
     if not savedk then
-      return handler.with(h, f, ...)
+      return handler.with("iterator", h, f, ...)
     else
       return savedk(...)
     end

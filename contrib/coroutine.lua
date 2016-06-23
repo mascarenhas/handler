@@ -2,22 +2,17 @@ local handler = require "handler"
 
 local coro = {}
 
-local coro_h = {}
-
 local main = { status = "normal" }
-
-function coro_h.coroutine_yield(k, ...)
-end
 
 function coro.create(f)
   local co = { status = "suspended", f = f, k = nil }
   co.h = {
-    coroutine_yield = function (k, ...)
+    yield = function (k, ...)
       co.status = "suspended"
       co.k = k
       return ...
     end,
-    coroutine_running = function (k)
+    running = function (k)
       return k(co)
     end,
     ["return"] = function (...)
@@ -46,24 +41,24 @@ function coro.resume(co, ...)
   if co.k then
     return resumek(co, pcall(co.k, ...))
   else
-    return resumek(co, pcall(handler.with, co.h, co.f, ...))
+    return resumek(co, pcall(handler.with, "coroutine", co.h, co.f, ...))
   end
 end
 
 function coro.yield(...)
-  return handler.op("coroutine_yield", ...)
+  return handler.op("coroutine", "yield", ...)
 end
 
 function coro.running()
-  if handler.present("coroutine_running") then
-    return handler.op("coroutine_running"), false
+  if handler.present("coroutine") then
+    return handler.op("coroutine", "running"), false
   else
     return main, true
   end
 end
 
 function coro.isyieldable()
-  return handler.present("coroutine_yield")
+  return handler.present("coroutine")
 end
 
 function coro.status(co)

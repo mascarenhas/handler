@@ -8,7 +8,7 @@ end
 
 local h = {}
 
-function h:ret(k, ...)
+function h.ret(k, ...)
   return ...
 end
 
